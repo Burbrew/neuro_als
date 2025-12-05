@@ -1,0 +1,284 @@
+Training Arguments:
+  outputDir: C:\Users\sargs\OneDrive\Desktop\ECE C143A\neural_seq_decoder\logs\speech_logs\speechBaseline4
+  datasetPath: C:\Users\sargs\OneDrive\Desktop\ECE C143A\neural_seq_decoder\data\ptDecoder_ctc.pkl
+  seqLen: 150
+  maxTimeSeriesLen: 1200
+  batchSize: 128
+  lrStart: 0.02
+  lrEnd: 0.005
+  nUnits: 256
+  nBatch: 10000
+  nLayers: 4
+  seed: 0
+  nClasses: 40
+  nInputFeatures: 256
+  dropout: 0.4
+  whiteNoiseSD: 0.8
+  constantOffsetSD: 0.2
+  gaussianSmoothWidth: 2.0
+  strideLen: 4
+  kernelLen: 32
+  bidirectional: True
+  l2_decay: 0.0001
+  post_gru_num_layers: 2
+  post_gru_dropout: 0.4
+  gradient_clip: 1.0
+  use_warmup_cosine: True
+  warmup_batches: 1000
+
+Training Statistics:
+  Test Loss: [6.35860661 3.55127389 2.99779102 2.67515836 2.46065085 2.27687032
+ 2.09964357 1.98420647 1.9035729  1.82684095 1.7545948  1.71299267
+ 1.65676607 1.60480404 1.56807055 1.52470412 1.49368259 1.45587431
+ 1.42754814 1.39764786 1.37485613 1.34280763 1.31450667 1.29928902
+ 1.27553545 1.25712994 1.24584293 1.21829905 1.20524229 1.18814972
+ 1.17635509 1.1570737  1.14592797 1.13063594 1.12394353 1.1014281
+ 1.09361485 1.0901759  1.07539954 1.06855672 1.06369032 1.05281149
+ 1.0398035  1.03167534 1.03034163 1.02442333 1.01661961 1.00618287
+ 0.99653462 0.99553565 0.99176427 0.98258652 0.97794853 0.97013044
+ 0.97253718 0.96965524 0.96524082 0.96724864 0.9624345  0.95465367
+ 0.94601304 0.94514016 0.93865163 0.93958746 0.94241803 0.93066175
+ 0.930205   0.92920944 0.92266103 0.92304802 0.92113958 0.91851459
+ 0.9220577  0.91268812 0.91159242 0.91635329 0.91509771 0.90919971
+ 0.90572371 0.90407521 0.89690304 0.90581022 0.90088769 0.89788171
+ 0.89512396 0.90005575 0.89363888 0.90107679 0.90146685 0.89487737
+ 0.89550461 0.89506912 0.89282424 0.89324529 0.8947694  0.8873308
+ 0.88999251 0.89292608 0.89761836 0.89190953]
+  Test CER: [0.86987743 0.99995873 0.98572077 0.91857538 0.80178284 0.72440262
+ 0.66076514 0.60018159 0.57199455 0.54644876 0.5292394  0.5143824
+ 0.47860179 0.47851925 0.4658908  0.46011308 0.43815773 0.43312286
+ 0.41508811 0.40939293 0.3986216  0.38801535 0.38095828 0.36824729
+ 0.36771078 0.35991086 0.35524741 0.35202839 0.34559036 0.33985391
+ 0.33820313 0.33073336 0.32842227 0.32359374 0.32210804 0.31612397
+ 0.31179068 0.31422558 0.30844786 0.30291775 0.30085428 0.30044158
+ 0.29524163 0.2952829  0.2923115  0.29268293 0.29140357 0.28884487
+ 0.28579093 0.28793694 0.28310841 0.28125129 0.27914655 0.27716561
+ 0.27716561 0.27398787 0.27468945 0.27559738 0.27283232 0.27171805
+ 0.27052123 0.26998473 0.26775618 0.26870538 0.26701333 0.26342289
+ 0.26697206 0.26532128 0.26189592 0.26065784 0.26234988 0.26222607
+ 0.25979118 0.2592134  0.25748009 0.25785151 0.25855309 0.25657216
+ 0.25723247 0.2561182  0.25521027 0.2557055  0.25409599 0.25603566
+ 0.25372457 0.25454996 0.25364203 0.25331187 0.25302299 0.25087698
+ 0.24972143 0.25058809 0.25013413 0.24963889 0.25128967 0.2501754
+ 0.25083571 0.24873096 0.25013413 0.24897858]
+  Number of evaluations: 100
+
+Model Weights:
+  Number of parameter groups: 93
+  Parameter keys: ['dayWeights', 'dayBias', 'gaussianSmoother.weight', 'gru_decoder.weight_ih_l0', 'gru_decoder.weight_hh_l0']...
+
+================================================================================
+ITERATION 5 SUMMARY
+================================================================================
+
+HYPOTHESIS & REASONING:
+Why I thought this would work:
+- Iteration 4 showed loss/CER divergence (loss increasing, CER improving)
+- I interpreted this as "overfitting" - model being overconfident
+- Standard solution for overfitting: more regularization
+- Higher dropout (0.4) should reduce overfitting
+- Lower learning rate (0.02) should provide smoother convergence
+- Higher weight decay (1e-4) adds L2 regularization
+- Fewer GRU layers (4 vs 5) since bidirectional captures more context
+- Changed multiple hyperparameters to aggressively combat "overfitting"
+
+Expected outcome: Better CER by reducing overfitting
+
+ACTUAL OUTCOME: ❌ FAILURE - UNDERFITTING
+- CER: 24.90% (vs 21.28% Iteration 4) - WORSE than baseline!
+- Completely wrong diagnosis: the loss/CER divergence WASN'T harmful overfitting
+- Iteration 4's model was making confident AND correct predictions
+- Too much regularization caused UNDERFITTING, not better generalization
+- Key lesson: Don't change multiple hyperparameters at once
+- Key lesson: High confidence + correct predictions = GOOD, not overfitting
+
+================================================================================
+
+IMPLEMENTATION:
+This iteration focused on hyperparameter tuning to address the overfitting observed
+in Iteration 4 (loss increasing while CER improving). The changes were designed to
+increase regularization and slow down training.
+
+Changes from Iteration 4:
+1. Learning Rate:
+   - lrStart: 0.05 → 0.02 (60% reduction)
+   - lrEnd: 0.02 → 0.005 (75% reduction)
+   - Rationale: Lower LR for smoother convergence
+
+2. Dropout:
+   - Main dropout: 0.2 → 0.4 (doubled)
+   - Post-GRU dropout: 0.2 → 0.4 (doubled)
+   - Rationale: More regularization for the large 21M parameter model
+
+3. GRU Layers:
+   - nLayers: 5 → 4 (20% reduction)
+   - Rationale: Bidirectional captures 2x context, fewer layers needed
+
+4. Weight Decay:
+   - l2_decay: 1e-5 → 1e-4 (10x increase)
+   - Rationale: Stronger L2 regularization
+
+5. Warmup:
+   - warmup_batches: 500 → 1000 (doubled)
+   - Rationale: Longer warmup for lower learning rate
+
+================================================================================
+PERFORMANCE ANALYSIS
+================================================================================
+
+RESULTS COMPARISON:
+- Baseline Final CER: 23.60% (0.23598)
+- Iteration 2 Final CER: 22.89% (0.22888)
+- Iteration 4 Final CER: 21.28% (0.21279) - BEST ✓
+- Iteration 5 Final CER: 24.90% (0.24898) - WORSE ✗
+- Performance vs Iteration 4: +3.62% CER (17% relative DEGRADATION)
+
+- Iteration 4 Final Loss: 1.088
+- Iteration 5 Final Loss: 0.892 (18% better loss, but worse CER!)
+
+- Iteration 4 Parameters: 101 groups (~21.4M)
+- Iteration 5 Parameters: 93 groups (~17.5M with 4 layers)
+
+TRAINING DYNAMICS:
+- Initial loss (batch 0): 6.36
+- Warmup phase (0-1000): Very slow convergence due to low LR
+- Final CER: 24.90% (worse than baseline 23.60%!)
+- Loss curve: Smooth, monotonically decreasing (no divergence)
+- CER curve: Much slower convergence than Iteration 4
+
+CER PROGRESSION COMPARISON:
+| Batch | Iteration 4 | Iteration 5 | Difference |
+|-------|-------------|-------------|------------|
+| 1000  | 37.54%      | 52.92%      | +15.38%    |
+| 2000  | 27.90%      | 39.86%      | +11.96%    |
+| 3000  | 24.54%      | 33.82%      | +9.28%     |
+| 5000  | 22.28%      | 28.58%      | +6.30%     |
+| 7000  | 21.89%      | 26.70%      | +4.81%     |
+| 9000  | 21.15%      | 24.97%      | +3.82%     |
+| Final | 21.28%      | 24.90%      | +3.62%     |
+
+================================================================================
+WHY RESULTS ARE WORSE
+================================================================================
+
+DIAGNOSIS: UNDERFITTING DUE TO OVER-REGULARIZATION
+
+1. TOO MUCH DROPOUT (0.4):
+   - Dropping 40% of neurons is too aggressive
+   - Model cannot learn complex patterns effectively
+   - The 21M parameter model doesn't need this much regularization
+   - Symptom: Slower convergence, lower final performance
+
+2. LEARNING RATE TOO LOW (0.02):
+   - 60% reduction from 0.05 was too aggressive
+   - Model learns too slowly, doesn't explore parameter space well
+   - Even with 10,000 batches, couldn't catch up to Iteration 4
+   - Symptom: Very slow CER improvement throughout training
+
+3. WEIGHT DECAY TOO HIGH (1e-4):
+   - 10x increase was too aggressive
+   - Weights are being penalized too strongly
+   - Combined with dropout, creates double regularization
+   - Symptom: Model underfits the training data
+
+4. FEWER LAYERS (4 vs 5):
+   - Reduced model capacity at the same time as increasing regularization
+   - Double penalty: less capacity + more regularization
+   - Should have only changed one variable at a time
+
+5. LONGER WARMUP (1000 batches):
+   - With lower LR, this means even slower start
+   - 10% of training spent in warmup phase
+   - Combined effect: model is "held back" too long
+
+KEY INSIGHT - LOSS VS CER PARADOX:
+- Iteration 4: Higher loss (1.088) but BETTER CER (21.28%)
+- Iteration 5: Lower loss (0.892) but WORSE CER (24.90%)
+- This confirms: The "overfitting" in Iteration 4 wasn't actually harmful!
+- The model was making confident (high loss) but CORRECT predictions
+- Iteration 5 makes safer (low loss) but LESS ACCURATE predictions
+
+================================================================================
+LESSONS LEARNED
+================================================================================
+
+1. DON'T CHANGE TOO MANY HYPERPARAMETERS AT ONCE:
+   - Changed 5 hyperparameters simultaneously
+   - Cannot identify which change caused the degradation
+   - Should change one variable at a time
+
+2. THE "OVERFITTING" IN ITERATION 4 WAS BENEFICIAL:
+   - High confidence + correct predictions = good model
+   - Low confidence + incorrect predictions = bad model
+   - CER is the metric that matters, not loss
+
+3. REGULARIZATION HAS DIMINISHING RETURNS:
+   - Some regularization (dropout 0.2) helps
+   - Too much regularization (dropout 0.4) hurts
+   - Need to find the sweet spot
+
+4. LEARNING RATE IS CRITICAL:
+   - 0.05 worked well for this architecture
+   - 0.02 was too conservative
+   - Don't reduce LR just because model is large
+
+5. MODEL CAPACITY MATTERS:
+   - Reducing layers (5→4) + increasing regularization = double penalty
+   - If reducing capacity, should REDUCE regularization to compensate
+
+================================================================================
+COMPARISON TABLE
+================================================================================
+
+| Metric           | Baseline | Iter 2  | Iter 4  | Iter 5   |
+|------------------|----------|---------|---------|----------|
+| Final CER        | 23.60%   | 22.89%  | 21.28%  | 24.90%   |
+| Final Loss       | 0.972    | 0.978   | 1.088   | 0.892    |
+| Dropout          | 0.2      | 0.2     | 0.2     | 0.4      |
+| Learning Rate    | 0.05     | 0.05    | 0.05    | 0.02     |
+| GRU Layers       | 5        | 5       | 5       | 4        |
+| Weight Decay     | 1e-5     | 1e-5    | 1e-5    | 1e-4     |
+| Bidirectional    | No       | No      | Yes     | Yes      |
+| Result           | Baseline | Better  | BEST    | WORST    |
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Iteration 5 demonstrates classic UNDERFITTING caused by over-regularization:
+
+✗ CER degraded: 21.28% → 24.90% (+3.62% absolute, 17% relative)
+✗ Slower than baseline (23.60%)
+✗ Changed too many hyperparameters at once
+✗ Misdiagnosed Iteration 4's behavior as "overfitting"
+
+The key insight is that Iteration 4's loss/CER divergence was NOT harmful overfitting.
+The model was learning to make confident, correct predictions. Iteration 5's attempt
+to "fix" this by adding regularization actually hurt performance.
+
+================================================================================
+RECOMMENDATIONS FOR NEXT ITERATION
+================================================================================
+
+REVERT to Iteration 4 settings and make SMALLER, INCREMENTAL changes:
+
+Option A - Slight Dropout Increase (test if any regularization helps):
+  - dropout: 0.2 → 0.25 (not 0.4)
+  - Keep everything else from Iteration 4
+
+Option B - Learning Rate Fine-tuning (test LR sensitivity):
+  - lrStart: 0.05 → 0.04 (small reduction)
+  - Keep dropout at 0.2
+
+Option C - Early Stopping (leverage Iteration 4's best point):
+  - Keep Iteration 4 settings exactly
+  - Stop training at batch 8000-8500 (where best CER was achieved)
+  - nBatch: 10000 → 8500
+
+Option D - Different Augmentation (test data augmentation):
+  - whiteNoiseSD: 0.8 → 1.0
+  - constantOffsetSD: 0.2 → 0.3
+  - Keep architecture from Iteration 4
+
+IMPORTANT: Only change ONE variable at a time to identify what actually helps!
+

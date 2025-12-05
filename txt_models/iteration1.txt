@@ -1,0 +1,173 @@
+Training Arguments:
+  outputDir: C:\Users\sargs\OneDrive\Desktop\ECE C143A\neural_seq_decoder\logs\speech_logs\speechBaseline4
+  datasetPath: C:\Users\sargs\OneDrive\Desktop\ECE C143A\neural_seq_decoder\data\ptDecoder_ctc.pkl
+  seqLen: 150
+  maxTimeSeriesLen: 1200
+  batchSize: 128
+  lrStart: 0.05
+  lrEnd: 0.02
+  nUnits: 256
+  nBatch: 10000
+  nLayers: 5
+  seed: 0
+  nClasses: 40
+  nInputFeatures: 256
+  dropout: 0.2
+  whiteNoiseSD: 0.8
+  constantOffsetSD: 0.2
+  gaussianSmoothWidth: 2.0
+  strideLen: 4
+  kernelLen: 32
+  bidirectional: False
+  l2_decay: 1e-05
+  post_gru_num_layers: 2
+  post_gru_dropout: 0.1
+
+Training Statistics:
+  Test Loss: [4.62817601 3.38321768 3.31843894 3.25923865 3.2117939  3.16454724
+ 3.15076501 3.10385568 3.07904598 3.03289904 2.98970631 2.95334598
+ 2.9077628  2.85514259 2.7788372  2.71547917 2.60888399 2.51313319
+ 2.40466636 2.30107144 2.22382532 2.11746447 2.04802268 1.95393167
+ 1.86936515 1.79845279 1.75150667 1.69383104 1.6486484  1.60464791
+ 1.56937517 1.53688676 1.51649502 1.46938624 1.44144154 1.43174199
+ 1.39923137 1.37570041 1.34501212 1.3313412  1.32393292 1.29160282
+ 1.27900478 1.27257824 1.25918606 1.24067756 1.22205148 1.21153641
+ 1.20002052 1.18427822 1.17592921 1.16025802 1.16609124 1.17532607
+ 1.13993399 1.13811602 1.14213712 1.11565031 1.11244011 1.09598228
+ 1.11842769 1.09027604 1.09053114 1.10178409 1.08458778 1.08507449
+ 1.08348301 1.07281106 1.06633363 1.06412874 1.0580274  1.04787152
+ 1.04820469 1.04317025 1.04494361 1.05008984 1.03340149 1.04051828
+ 1.04109846 1.03718322 1.03538915 1.0235578  1.02792004 1.02860328
+ 1.0306047  1.02427755 1.03542764 1.02649198 1.01919869 1.01912764
+ 1.02391652 1.01261582 1.02082757 1.01567439 1.01319913 1.01129743
+ 1.01837267 1.00881461 1.01401009 1.01379217]
+  Test CER: [0.99145722 0.90912468 0.91444843 0.91440716 0.90718501 0.88791218
+ 0.8719409  0.84131897 0.80582725 0.79030993 0.76220544 0.75349759
+ 0.74351038 0.73880566 0.72147249 0.71577731 0.6751269  0.65234617
+ 0.64153357 0.63030828 0.61012752 0.59130865 0.56980727 0.54884239
+ 0.53064257 0.51958235 0.50583963 0.48838265 0.47307169 0.46461145
+ 0.45829722 0.44608147 0.4436053  0.42594198 0.42218646 0.4209071
+ 0.40621518 0.40452313 0.3921423  0.38421856 0.386736   0.37588213
+ 0.37720276 0.36837109 0.3655235  0.3599934  0.357022   0.34658083
+ 0.35037762 0.34612686 0.34084437 0.33890471 0.33490157 0.33543808
+ 0.32945401 0.32602864 0.32668895 0.32037473 0.31773348 0.31641286
+ 0.3170319  0.31261607 0.31261607 0.31261607 0.31232718 0.30985102
+ 0.30939705 0.30671454 0.30333044 0.30295902 0.30246379 0.30089555
+ 0.29978127 0.29936858 0.29874954 0.30027651 0.29198135 0.29152738
+ 0.29115596 0.29033057 0.29288927 0.28925756 0.2867814  0.28925756
+ 0.28645124 0.28859725 0.28752425 0.284883   0.28281953 0.28038463
+ 0.28215922 0.28195287 0.28125129 0.2808386  0.277991   0.27865131
+ 0.27708308 0.27708308 0.27477199 0.27712434]
+  Number of evaluations: 100
+
+Model Weights:
+  Number of parameter groups: 81
+  Parameter keys: ['dayWeights', 'dayBias', 'gaussianSmoother.weight', 'gru_decoder.weight_ih_l0', 'gru_decoder.weight_hh_l0']...
+
+================================================================================
+ITERATION 1 SUMMARY
+================================================================================
+
+HYPOTHESIS & REASONING:
+Why I thought this would work:
+- The baseline GRU model outputs directly to classification after the GRU layers
+- Adding a post-processing stack could refine the GRU representations before classification
+- Linear-LayerNorm-Dropout blocks are common in modern architectures (Transformers)
+- LayerNorm stabilizes training, Dropout provides regularization
+- Initializing Linear layers near identity should preserve GRU outputs initially
+- The model could learn to refine features without disrupting what GRU learned
+
+Expected outcome: Improvement over baseline through better feature refinement
+
+ACTUAL OUTCOME: ❌ FAILURE
+- CER: 27.71% (vs 23.60% baseline) - significantly WORSE
+- Loss: 1.014 (vs 0.972 baseline) - also worse
+- The post-GRU stack DISRUPTED rather than refined the GRU representations
+- Key issues identified:
+  1. No residual connections - stack overwrites GRU outputs instead of refining
+  2. Dropout 0.1 too low - insufficient regularization for added capacity
+  3. No non-linearity between Linear and LayerNorm
+- This failure led to the residual connection fix in Iteration 2
+
+================================================================================
+
+IMPLEMENTATION:
+This iteration added a configurable post-GRU processing stack to the baseline GRU
+decoder architecture. Specifically:
+
+1. Post-GRU Linear-LayerNorm-Dropout Stack:
+   - Added 2 blocks of [Linear(hidden_dim, hidden_dim) → LayerNorm(hidden_dim) → Dropout(0.1)]
+   - Positioned after the GRU layers but before the final classification layer
+   - Linear layers initialized near identity to preserve GRU outputs initially
+   - This adds 8 additional parameter groups (81 vs 73 in baseline)
+
+2. Architecture Changes:
+   - Model now processes GRU outputs through additional transformation layers
+   - Maintains same input/output shapes and CTC loss compatibility
+   - All changes are backward compatible with default parameters
+
+3. Code Improvements:
+   - Added comprehensive docstrings and inline documentation
+   - Added debug output to verify model configuration
+   - Added parameter counting for architecture verification
+
+================================================================================
+PERFORMANCE ANALYSIS
+================================================================================
+
+RESULTS COMPARISON:
+- Baseline Final CER: 23.60% (0.23598)
+- Iteration 1 Final CER: 27.71% (0.27712)
+- Performance Degradation: +4.11% CER (worse)
+
+- Baseline Final Loss: 0.972
+- Iteration 1 Final Loss: 1.014
+- Loss Increase: +0.042 (worse)
+
+- Baseline Parameters: 73 groups
+- Iteration 1 Parameters: 81 groups (+8 groups from post-GRU stack)
+
+WHY RESULTS ARE WORSE:
+
+1. OVERFITTING / INSUFFICIENT REGULARIZATION:
+   - Added 2 post-GRU blocks without proportional increase in regularization
+   - The 0.1 dropout may be insufficient for the additional capacity
+   - Model has more parameters (81 vs 73 groups) but same training budget
+   - Could benefit from higher dropout (0.2-0.3) or weight decay adjustment
+
+2. INITIALIZATION ISSUES:
+   - While Linear layers are initialized near identity, LayerNorm starts at zero
+   - The combination may create a non-optimal starting point
+   - May need warmup or different initialization strategy for LayerNorm
+
+3. LEARNING RATE MISMATCH:
+   - Same learning rate (0.05 → 0.02) used for larger model
+   - Additional layers may need different learning rate schedule
+   - Could benefit from layer-wise learning rates or slower decay
+
+4. ARCHITECTURE COMPLEXITY:
+   - Post-GRU stack adds non-linearity that may interfere with GRU representations
+   - The additional transformations may be disrupting the learned GRU features
+   - May need residual connections or skip connections to preserve information flow
+
+5. TRAINING DYNAMICS:
+   - Early training shows much higher loss (4.63 vs 6.28 at batch 0, but 3.38 vs 2.94 at batch 100)
+   - Model converges slower initially, suggesting optimization difficulties
+   - The added complexity may require more training steps or different optimization
+
+6. POTENTIAL SOLUTIONS FOR NEXT ITERATION:
+   - Increase dropout to 0.2-0.3 for post-GRU stack
+   - Add residual connections: hid = hid + post_gru_stack(hid)
+   - Use lower learning rate for post-GRU layers
+   - Try fewer layers (1 instead of 2) to reduce complexity
+   - Add gradient clipping to stabilize training
+   - Consider batch normalization instead of layer normalization
+   - Experiment with different activation functions between layers
+
+CONCLUSION:
+The post-GRU stack adds model capacity but without proper regularization and optimization
+adjustments, it degrades performance. The architecture change is sound, but requires
+hyperparameter tuning and potentially architectural modifications (residual connections)
+to realize benefits.
+
+  
